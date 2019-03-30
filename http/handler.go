@@ -9,35 +9,49 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 func handleFileUpload(c *gin.Context) {
 	ret := new(common.FSUploadResult)
+	ret.Urls = make(map[string]string)
 	ret.Code = 0
 	statusCode := http.StatusOK
 	defer func() {
-		c.JSON(statusCode,ret)
+		c.JSON(statusCode, ret)
 	}()
-	form,err := c.MultipartForm()
+	form, err := c.MultipartForm()
 	if nil != err {
 		ret.Code = -1
 		ret.Msg = "not multipart"
 		return
 	}
-	rsp := make([]string,0)
+	req := new(common.FSUploadParam)
+	param := form.Value["param"]
+	if nil == param {
+		statusCode = http.StatusBadRequest
+		ret.Code = -1
+		ret.Msg = "not param"
+		return
+	}
+	for i, p := range param {
+		logger.Info("req param", zap.String(strconv.Itoa(i), p))
+		json.Unmarshal([]byte(p), req)
+	}
+	now := time.Now().Unix()
 	files := form.File["files"]
 	for _, f := range files {
 		fi := new(common.FileInfo)
-		fi.Type = c.Param("type")
-		fi.Expire,_ = strconv.ParseInt(c.Param("expire"),10,64)
+		fi.Type = req.Type
+		fi.Expire = req.Expire
 		fi.Name = filepath.Base(f.Filename)
-		in,_ := f.Open()
-		fileAddr,err := file.GetInstance().SaveFile(fi,in)
+		fi.CreateTime = now
+		in, _ := f.Open()
+		fileAddr, err := file.GetInstance().SaveFile(fi, in)
 		if nil != err {
-			logger.Error("save file err",zap.Error(err))
+			logger.Error("save file err", zap.Error(err))
 		}
-		rsp = append(rsp, fileAddr)
+		ret.Urls[f.Filename] = fileAddr
 	}
-	json.NewEncoder(c.Writer).Encode(rsp)
 	return
 }

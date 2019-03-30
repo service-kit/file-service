@@ -2,8 +2,8 @@ package config
 
 import (
 	"errors"
-	"github.com/service-kit/file-service/util"
 	"github.com/Unknwon/goconfig"
+	"github.com/service-kit/file-service/util"
 	"io"
 	"time"
 )

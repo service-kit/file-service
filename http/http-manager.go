@@ -11,7 +11,7 @@ import (
 
 type httpManager struct {
 	addr           string
-	downAddr           string
+	downAddr       string
 	wg             *sync.WaitGroup
 	engine         *gin.Engine
 	authEnable     bool
@@ -33,7 +33,7 @@ func (self *httpManager) InitManager(wg *sync.WaitGroup) error {
 	logger = log.GetInstance().GetLogger()
 	self.wg = wg
 	defer self.wg.Done()
-	errCh := make(chan error,1)
+	errCh := make(chan error, 1)
 	var err error = nil
 	self.engine = gin.Default()
 	self.addr, err = config.GetInstance().GetConfig("HTTP_ADDR")
@@ -44,18 +44,18 @@ func (self *httpManager) InitManager(wg *sync.WaitGroup) error {
 	if nil != err {
 		return err
 	}
-	self.engine.Static("/","./public")
-	self.engine.POST("/upload",handleFileUpload)
+	self.engine.Static("/", "./public")
+	self.engine.POST("/upload", handleFileUpload)
 	go func() {
 		errCh <- self.engine.Run(self.addr)
 	}()
-	http.Handle("/",http.FileServer(http.Dir("./file_root/")))
+	http.Handle("/", http.FileServer(http.Dir("./file_root/")))
 	go func() {
-		errCh <- http.ListenAndServe(self.downAddr,nil)
+		errCh <- http.ListenAndServe(self.downAddr, nil)
 	}()
 	select {
-		case err = <-errCh:
-			logger.Error("http service shutdown",zap.Error(err))
-			return err
+	case err = <-errCh:
+		logger.Error("http service shutdown", zap.Error(err))
+		return err
 	}
 }
