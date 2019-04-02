@@ -44,12 +44,16 @@ func (self *httpManager) InitManager(wg *sync.WaitGroup) error {
 	if nil != err {
 		return err
 	}
+	rootPath, err := config.GetInstance().GetConfig("FILE_ROOT_PATH")
+	if nil != err {
+		return err
+	}
 	self.engine.Static("/", "./public")
 	self.engine.POST("/upload", handleFileUpload)
 	go func() {
 		errCh <- self.engine.Run(self.addr)
 	}()
-	http.Handle("/", http.FileServer(http.Dir("./file_root/")))
+	http.Handle("/", http.FileServer(http.Dir("./"+rootPath+"/")))
 	go func() {
 		errCh <- http.ListenAndServe(self.downAddr, nil)
 	}()
