@@ -2,7 +2,6 @@
 FROM registry.ainirobot.com/arch_ci/golang:build as builder
 WORKDIR /go/src/github.com/service-kit/file-service
 ADD . .
-RUN dep ensure -vendor-only -v
 RUN go build -tags netgo -o file-service
 
 # final stage

@@ -36,7 +36,7 @@ func (self *fileManager) InitManager() error {
 	logger = log.GetInstance().GetLogger()
 	self.localFileList = list.New()
 	self.expireFileList = list.New()
-	self.basePath = "file_root/"
+	self.basePath, _ = config.GetInstance().GetConfig("FILE_ROOT_PATH")
 	self.downDomain, _ = config.GetInstance().GetConfig("FILE_DOWNLOAD_DOMAIN")
 	self.initFileDir()
 	self.checkFile()
