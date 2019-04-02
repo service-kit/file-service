@@ -5,9 +5,52 @@ import (
 	"github.com/service-kit/file-service/config"
 	"github.com/service-kit/file-service/log"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
+	"os"
 	"sync"
 )
+
+type safeFilesystem struct {
+	fs               http.FileSystem
+	readDirBatchSize int
+}
+
+func (fs safeFilesystem) Open(name string) (http.File, error) {
+	f, err := fs.fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	return StatFile{File: f, readDirBatchSize: fs.readDirBatchSize}, nil
+}
+
+type StatFile struct {
+	http.File
+	readDirBatchSize int
+}
+
+func (e StatFile) Stat() (os.FileInfo, error) {
+	s, err := e.File.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if s.IsDir() {
+	LOOP:
+		for {
+			_, err := e.File.Readdir(e.readDirBatchSize)
+			switch err {
+			case io.EOF:
+				break LOOP
+			case nil:
+				continue
+			default:
+				return nil, err
+			}
+		}
+		return nil, os.ErrNotExist
+	}
+	return s, err
+}
 
 type httpManager struct {
 	addr           string
@@ -53,7 +96,9 @@ func (self *httpManager) InitManager(wg *sync.WaitGroup) error {
 	go func() {
 		errCh <- self.engine.Run(self.addr)
 	}()
-	http.Handle("/", http.FileServer(http.Dir("./"+rootPath+"/")))
+	fs := safeFilesystem{fs: http.Dir("./"+rootPath+"/"), readDirBatchSize: 2}
+	fss := http.FileServer(fs)
+	http.Handle("/", fss)
 	go func() {
 		errCh <- http.ListenAndServe(self.downAddr, nil)
 	}()
