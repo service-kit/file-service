@@ -96,7 +96,7 @@ func (self *httpManager) InitManager(wg *sync.WaitGroup) error {
 	go func() {
 		errCh <- self.engine.Run(self.addr)
 	}()
-	fs := safeFilesystem{fs: http.Dir("./"+rootPath+"/"), readDirBatchSize: 2}
+	fs := safeFilesystem{fs: http.Dir("./" + rootPath + "/"), readDirBatchSize: 2}
 	fss := http.FileServer(fs)
 	http.Handle("/", fss)
 	go func() {

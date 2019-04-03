@@ -18,6 +18,17 @@ func handleFileUpload(c *gin.Context) {
 	ret.Code = 0
 	statusCode := http.StatusOK
 	defer func() {
+		if err := recover(); err != nil {
+			logger.Error("handle asr request error", zap.Reflect("error", err))
+			ret.Code = -1
+			ret.Msg = "service has some err"
+			statusCode = http.StatusInternalServerError
+		}
+		logger.Info("handle upload request result", zap.String("req", c.Request.URL.RawQuery), zap.Any("ret", ret))
+		c.JSON(statusCode, ret)
+	}()
+
+	defer func() {
 		c.JSON(statusCode, ret)
 	}()
 	form, err := c.MultipartForm()
