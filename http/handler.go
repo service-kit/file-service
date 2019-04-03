@@ -27,10 +27,7 @@ func handleFileUpload(c *gin.Context) {
 		logger.Info("handle upload request result", zap.String("req", c.Request.URL.RawQuery), zap.Any("ret", ret))
 		c.JSON(statusCode, ret)
 	}()
-
-	defer func() {
-		c.JSON(statusCode, ret)
-	}()
+	
 	form, err := c.MultipartForm()
 	if nil != err {
 		ret.Code = -1
